@@ -1,0 +1,97 @@
+---
+title: "Data Science Midterm Progress Report"
+author: "Sam Goss"
+date: "September 22, 2020"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+```
+
+
+
+```{r packages}
+library( tidyverse )
+library( ggplot2 )
+eng_rems <- read_csv("engineRemovals20172020.csv", col_names = TRUE)
+```
+
+## Premature Engine Removals
+
+### DATA
++ I:\"engineRemovals20172020.csv"
++ Includes data on `r nrow( eng_rems )` engine removals from Jan 2017 - Sep 2020
++ CSV file of excel spreadsheet of removals maintained by Engine Planning Department
+
+
++ Sample of Data
+
+```{r samp , include=TRUE}
+head(eng_rems)
+```
+
+### Initial Questions
++ Are premature engine removal causes random or specific
++ How many flight cycles define a premature removal
+
+### New / Altered Questions
++ What type of removals should be included:
+    - LLP - (life limited parts)
+    - UER - (unscheduled engine removals)
+    - Planned - problem identified, given additional cycles to removal
+    - All others were for company convenience and should not be considered.
+    - Filter type of removals
+```{r echo=TRUE, include=TRUE}
+UPLREM <- eng_rems %>%
+  filter(`Type of Removal` == "LLP" | `Type of Removal` == "UER" | `Type of Removal` == "Planned")
+```
++ How to handle 19 fleet types.
+    - Six fleets eliminated due to observations less than 14 (retired or new fleets)
+    - Group by aircraft type or OEM
+        - CF6 (CF6-80C2) - GE
+        - CFM (CFM56) - GE & Safran
+        - PW (PW2000 & PW400) - Pratt & Whitney
+        - T-Tails (BR715, V2500, JT8D) - largest observation, sunsetting fleets
+
+### Evaluate CF6 Fleet first       
+```{r include=TRUE}
+CF680 <- UPLREM %>%
+  filter(`Engine Type` == "CF6-80C2B6F" | `Engine Type` == "CF6-80C2B6" | `Engine Type` == "CF6-80C2B8F")
+
+```
+   
++ Includes `r nrow( CF680 )` removals
+```{r include=TRUE}
+ggplot(data=CF680) +
+  geom_bar(mapping = aes(x=`Engine Type`, fill = `Type of Removal`))
+```
+```{r include=TRUE}
+ggplot(data=CF680, mapping = aes(x=CSR, fill = `Type of Removal`)) +
+  geom_histogram(binwidth = 250)
+```
+    
++ Histogram shows first 500 cycles appear to be outliers - confirm with boxplot
+```{r include=TRUE}
+ggplot(data = CF680, mapping = aes(x=`Engine Type`, y= CSR)) +
+  geom_boxplot()
+```
+
++ Reduce data set to only removals in first 500 cycles
+```{r include=TRUE}
+CF680LT <- CF680 %>% filter(CSR <= 500)
+```
++ Down to `r nrow( CF680LT )` removals
++ What are the causes for these removals?
+```{r include=TRUE}
+ggplot(data = CF680LT, aes(x=`Engine Type`, fill = Reason)) +
+  geom_bar(position = "dodge")
+```
+
+## Conclusion 
++ Since no reason has more than 2 removals, the early removals are random.
+
+
+    
